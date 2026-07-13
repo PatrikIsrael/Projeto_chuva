@@ -1,0 +1,145 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Personalizar - Controle de Chuva{% endblock %}
+
+{% block content %}
+<div class="dashboard-header">
+    <div>
+        <h1 class="page-title"><i class="fas fa-palette"></i> Personalizar</h1>
+        <p class="page-subtitle">Configure seu tema, cores e informações do perfil.</p>
+    </div>
+</div>
+
+<div class="dashboard-grid">
+    <section class="card full-width">
+        <div class="card-header">
+            <div class="card-icon">
+                <i class="fas fa-id-card"></i>
+            </div>
+            <h2 class="card-title">Configurações do Perfil</h2>
+        </div>
+        <div class="card-body">
+            <form method="post" action="{% url 'core:perfil' %}">
+                {% csrf_token %}
+                {% if form.non_field_errors %}
+                    <div class="alert alert-error">{{ form.non_field_errors }}</div>
+                {% endif %}
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="{{ form.telefone.id_for_label }}">
+                            <i class="fas fa-phone"></i> {{ form.telefone.label }}
+                        </label>
+                        {{ form.telefone }}
+                        {% if form.telefone.errors %}
+                            <div class="field-error">{{ form.telefone.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="form-group">
+                        <label for="{{ form.tema.id_for_label }}">
+                            <i class="fas fa-moon"></i> {{ form.tema.label }}
+                        </label>
+                        {{ form.tema }}
+                        {% if form.tema.errors %}
+                            <div class="field-error">{{ form.tema.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="form-group">
+                        <label for="{{ form.paleta_cores.id_for_label }}">
+                            <i class="fas fa-paint-brush"></i> {{ form.paleta_cores.label }}
+                        </label>
+                        {{ form.paleta_cores }}
+                        {% if form.paleta_cores.errors %}
+                            <div class="field-error">{{ form.paleta_cores.errors }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="palette-preview">
+                    <span class="result-label">Pré-visualização das Paletas</span>
+                    <div class="palette-swatches">
+                        <div class="swatch" data-palette="default" title="Padrão (Azul)">
+                            <span class="swatch-color c1"></span>
+                            <span class="swatch-color c2"></span>
+                            <span class="swatch-color c3"></span>
+                            <span class="swatch-label">Padrão</span>
+                        </div>
+                        <div class="swatch" data-palette="forest" title="Floresta (Verde)">
+                            <span class="swatch-color c1"></span>
+                            <span class="swatch-color c2"></span>
+                            <span class="swatch-color c3"></span>
+                            <span class="swatch-label">Floresta</span>
+                        </div>
+                        <div class="swatch" data-palette="sunset" title="Pôr do Sol (Laranja)">
+                            <span class="swatch-color c1"></span>
+                            <span class="swatch-color c2"></span>
+                            <span class="swatch-color c3"></span>
+                            <span class="swatch-label">Pôr do Sol</span>
+                        </div>
+                        <div class="swatch" data-palette="ocean" title="Oceano (Turquesa)">
+                            <span class="swatch-color c1"></span>
+                            <span class="swatch-color c2"></span>
+                            <span class="swatch-color c3"></span>
+                            <span class="swatch-label">Oceano</span>
+                        </div>
+                        <div class="swatch" data-palette="lavender" title="Lavanda (Roxo)">
+                            <span class="swatch-color c1"></span>
+                            <span class="swatch-color c2"></span>
+                            <span class="swatch-color c3"></span>
+                            <span class="swatch-label">Lavanda</span>
+                        </div>
+                        <div class="swatch" data-palette="ruby" title="Rubi (Vermelho)">
+                            <span class="swatch-color c1"></span>
+                            <span class="swatch-color c2"></span>
+                            <span class="swatch-color c3"></span>
+                            <span class="swatch-label">Rubi</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-top: 20px;">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Salvar Configurações
+                    </button>
+                    <a href="{% url 'core:home' %}" class="btn btn-outline" style="margin-left:8px;">
+                        <i class="fas fa-arrow-left"></i> Voltar
+                    </a>
+                </div>
+            </form>
+        </div>
+    </section>
+</div>
+
+<script>
+    const selectPaleta = document.getElementById('{{ form.paleta_cores.id_for_label }}');
+    const selectTema = document.getElementById('{{ form.tema.id_for_label }}');
+    const html = document.documentElement;
+
+    function previewPalette(palette) {
+        html.setAttribute('data-palette', palette);
+    }
+
+    function previewTheme(theme) {
+        html.setAttribute('data-theme', theme);
+    }
+
+    selectPaleta.addEventListener('change', function() {
+        previewPalette(this.value);
+    });
+
+    selectTema.addEventListener('change', function() {
+        previewTheme(this.value);
+    });
+
+    document.querySelectorAll('.swatch').forEach(el => {
+        el.addEventListener('click', function() {
+            const palette = this.dataset.palette;
+            selectPaleta.value = palette;
+            previewPalette(palette);
+            document.querySelectorAll('.swatch').forEach(s => s.classList.remove('active'));
+            this.classList.add('active');
+        });
+    });
+</script>
+{% endblock %}

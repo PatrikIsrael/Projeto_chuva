@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="pt-br"
+      data-theme="{{ profile.tema|default:'light' }}"
+      data-palette="{{ profile.paleta_cores|default:'default' }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Sistema de Controle de Chuva{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container navbar-container">
+            <a href="{% url 'core:home' %}" class="navbar-brand">
+                <i class="fas fa-cloud-rain"></i> Controle de Chuva
+            </a>
+            {% if user.is_authenticated %}
+            <div class="navbar-links">
+                <a href="{% url 'core:perfil' %}" class="nav-link" title="Configurações">
+                    <i class="fas fa-palette"></i>
+                    <span class="nav-link-text">Personalizar</span>
+                </a>
+                <span class="navbar-user">
+                    <i class="fas fa-user-circle"></i> {{ user.username }}
+                </span>
+                <form method="post" action="{% url 'logout' %}" class="inline-form">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-logout">
+                        <i class="fas fa-sign-out-alt"></i> Sair
+                    </button>
+                </form>
+            </div>
+            {% endif %}
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <div class="container">
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible">
+                        <span>{{ message }}</span>
+                        <button type="button" class="alert-close" onclick="this.parentElement.remove()">&times;</button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+
+    <script>
+        document.querySelectorAll('.alert-close').forEach(btn => {
+            btn.addEventListener('click', function() {
+                this.parentElement.style.opacity = '0';
+                setTimeout(() => this.parentElement.remove(), 300);
+            });
+        });
+        setTimeout(() => {
+            document.querySelectorAll('.alert').forEach(a => {
+                a.style.opacity = '0';
+                setTimeout(() => a.remove(), 300);
+            });
+        }, 5000);
+    </script>
+</body>
+</html>

@@ -1,0 +1,127 @@
+# ============================================================
+# Python
+# ============================================================
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+*.pyc
+*.class
+*.egg
+*.egg-info/
+dist/
+build/
+eggs/
+parts/
+bin/
+var/
+sdist/
+*.whl
+*.egg-info/
+.installed.cfg
+*.manifest
+*.spec
+pip-log.txt
+pip-delete-this-directory.txt
+
+# ============================================================
+# Virtual Environment
+# ============================================================
+.env
+.venv
+env/
+venv/
+venv.bak/
+ENV/
+env.bak/
+
+# ============================================================
+# Django
+# ============================================================
+*.log
+*.pot
+*.mo
+*.db
+*.sqlite3
+db.sqlite3
+media/
+staticfiles/
+static_root/
+media_root/
+
+# ============================================================
+# Environment & Secrets
+# ============================================================
+.env
+.env.*
+!.env.example
+*.env.local
+*.env.production
+*.env.development
+docker-compose.override.yml
+
+# ============================================================
+# IDE / Editors
+# ============================================================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+*.sublime-workspace
+*.sublime-project
+*.komodoproject
+.project
+.classpath
+*.launch
+.settings/
+
+# ============================================================
+# OS
+# ============================================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# ============================================================
+# Testing
+# ============================================================
+.coverage
+.coverage.*
+htmlcov/
+coverage/
+coverage.xml
+.pytest_cache/
+.tox/
+*.cover
+.hypothesis/
+
+# ============================================================
+# Migration backups (keep actual migrations)
+# ============================================================
+*.bak
+*.orig
+
+# ============================================================
+# Docker
+# ============================================================
+docker-compose.override.yml
+
+# ============================================================
+# Misc
+# ============================================================
+*.tgz
+*.tar.gz
+*.zip
+*.rar
+*.7z
+tmp/
+temp/

@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="pt-br" data-theme="light" data-palette="default">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Controle de Chuva</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body class="auth-page">
+    <div class="auth-container">
+        <div class="auth-card">
+            <div class="auth-header">
+                <div class="auth-logo">
+                    <i class="fas fa-cloud-rain"></i>
+                </div>
+                <h1 class="auth-title">Controle de Chuva</h1>
+                <p class="auth-subtitle">Faça login para acessar o sistema</p>
+            </div>
+
+            <form method="post" action="{% url 'login' %}" class="auth-form">
+                {% csrf_token %}
+
+                {% if form.non_field_errors %}
+                    <div class="alert alert-error">
+                        {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+                    </div>
+                {% endif %}
+
+                <div class="form-group">
+                    <label for="id_username">
+                        <i class="fas fa-user"></i> Usuário
+                    </label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-user input-icon"></i>
+                        <input type="text" name="username" id="id_username"
+                               class="form-control" required autofocus
+                               placeholder="Digite seu usuário">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="id_password">
+                        <i class="fas fa-lock"></i> Senha
+                    </label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-lock input-icon"></i>
+                        <input type="password" name="password" id="id_password"
+                               class="form-control" required
+                               placeholder="Digite sua senha">
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-full">
+                    <i class="fas fa-sign-in-alt"></i> Entrar
+                </button>
+            </form>
+
+            <div class="auth-footer">
+                <span>Não tem conta?</span>
+                <a href="{% url 'core:signup' %}" class="btn btn-outline btn-full">
+                    <i class="fas fa-user-plus"></i> Criar Conta
+                </a>
+            </div>
+
+            <input type="hidden" name="next" value="{{ next }}">
+        </div>
+    </div>
+</body>
+</html>

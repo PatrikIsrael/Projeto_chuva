@@ -1,0 +1,190 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Home - Controle de Chuva{% endblock %}
+
+{% block content %}
+<div class="dashboard-header">
+    <div>
+        <h1 class="page-title"><i class="fas fa-tachometer-alt"></i> Dashboard</h1>
+        <p class="page-subtitle">Bem-vindo, {{ user.username }}! Registre e acompanhe as medições de chuva.</p>
+    </div>
+</div>
+
+<div class="dashboard-grid">
+    <section class="card">
+        <div class="card-header">
+            <div class="card-icon">
+                <i class="fas fa-plus-circle"></i>
+            </div>
+            <h2 class="card-title">Novo Registro</h2>
+        </div>
+        <div class="card-body">
+            <form method="post" action="{% url 'core:home' %}" class="registro-form">
+                {% csrf_token %}
+                {% if form.non_field_errors %}
+                    <div class="alert alert-error">{{ form.non_field_errors }}</div>
+                {% endif %}
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="{{ form.data.id_for_label }}">
+                            <i class="fas fa-calendar"></i> {{ form.data.label }}
+                        </label>
+                        {{ form.data }}
+                        {% if form.data.errors %}
+                            <div class="field-error">{{ form.data.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="form-group">
+                        <label for="{{ form.milimetros.id_for_label }}">
+                            <i class="fas fa-tint"></i> {{ form.milimetros.label }}
+                        </label>
+                        {{ form.milimetros }}
+                        {% if form.milimetros.errors %}
+                            <div class="field-error">{{ form.milimetros.errors }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="{{ form.observacao.id_for_label }}">
+                        <i class="fas fa-comment"></i> {{ form.observacao.label }}
+                    </label>
+                    {{ form.observacao }}
+                    {% if form.observacao.errors %}
+                        <div class="field-error">{{ form.observacao.errors }}</div>
+                    {% endif %}
+                </div>
+                <button type="submit" name="salvar_chuva" class="btn btn-primary btn-full">
+                    <i class="fas fa-save"></i> Salvar Medição
+                </button>
+            </form>
+        </div>
+    </section>
+
+    <section class="card">
+        <div class="card-header">
+            <div class="card-icon">
+                <i class="fas fa-calculator"></i>
+            </div>
+            <h2 class="card-title">Somar Período</h2>
+        </div>
+        <div class="card-body">
+            <form method="get" action="{% url 'core:home' %}" class="soma-form">
+                {% if form_soma.non_field_errors %}
+                    <div class="alert alert-error">{{ form_soma.non_field_errors }}</div>
+                {% endif %}
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="{{ form_soma.inicio.id_for_label }}">
+                            <i class="fas fa-play"></i> {{ form_soma.inicio.label }}
+                        </label>
+                        {{ form_soma.inicio }}
+                        {% if form_soma.inicio.errors %}
+                            <div class="field-error">{{ form_soma.inicio.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="form-group">
+                        <label for="{{ form_soma.fim.id_for_label }}">
+                            <i class="fas fa-stop"></i> {{ form_soma.fim.label }}
+                        </label>
+                        {{ form_soma.fim }}
+                        {% if form_soma.fim.errors %}
+                            <div class="field-error">{{ form_soma.fim.errors }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-secondary btn-full">
+                    <i class="fas fa-chart-bar"></i> Calcular Total
+                </button>
+            </form>
+
+            {% if total_periodo is not None %}
+                <div class="result-box">
+                    <div class="result-main">
+                        <span class="result-label">Total do Período</span>
+                        <span class="result-value">
+                            {% if total_periodo %}
+                                {{ total_periodo|floatformat:1 }}
+                            {% else %}
+                                0.0
+                            {% endif %}
+                            <small>mm</small>
+                        </span>
+                    </div>
+                    {% if registros_periodo %}
+                        <div class="result-detail">
+                            <span class="result-label">Detalhamento</span>
+                            <div class="mini-table">
+                                {% for r in registros_periodo %}
+                                    <div class="mini-row">
+                                        <span class="mini-data">{{ r.data|date:"d/m" }}</span>
+                                        <span class="mini-valor">{{ r.milimetros|floatformat:1 }} mm</span>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+    </section>
+</div>
+
+<section class="card full-width">
+    <div class="card-header">
+        <div class="card-icon">
+            <i class="fas fa-history"></i>
+        </div>
+        <h2 class="card-title">Últimos Registros</h2>
+        <span class="card-badge">{{ ultimos_registros|length }}</span>
+    </div>
+    <div class="card-body">
+        {% if ultimos_registros %}
+            <div class="table-wrapper">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th><i class="fas fa-calendar-day"></i> Data</th>
+                            <th><i class="fas fa-tint"></i> Chuva (mm)</th>
+                            <th><i class="fas fa-comment"></i> Observação</th>
+                            <th><i class="fas fa-cog"></i> Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for registro in ultimos_registros %}
+                            <tr>
+                                <td data-label="Data">
+                                    <span class="date-badge">{{ registro.data|date:"d/m/Y" }}</span>
+                                </td>
+                                <td data-label="Chuva (mm)">
+                                    <span class="mm-value">{{ registro.milimetros|floatformat:1 }}</span>
+                                </td>
+                                <td data-label="Observação">
+                                    {{ registro.observacao|default:"—"|truncatechars:50 }}
+                                </td>
+                                <td data-label="Ações">
+                                    <form method="post"
+                                          action="{% url 'core:excluir_registro' registro.id %}"
+                                          class="inline-form"
+                                          onsubmit="return confirm('Excluir registro de {{ registro.data|date:'d/m/Y' }}?');">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-danger btn-small" title="Excluir">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <i class="fas fa-cloud-sun empty-icon"></i>
+                <p>Nenhum registro de chuva encontrado.</p>
+                <p class="empty-hint">Use o formulário acima para adicionar seu primeiro registro!</p>
+            </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}
