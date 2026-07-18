@@ -1,0 +1,498 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Dashboard - Controle de Chuva{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-header">
+    <div>
+        <h1 class="page-title"><i class="fas fa-chart-pie"></i> Dashboard Estatístico</h1>
+        <p class="page-subtitle">Visão completa dos seus registros de chuva com gráficos comparativos.</p>
+    </div>
+    <a href="{% url 'core:home' %}" class="btn btn-outline">
+        <i class="fas fa-arrow-left"></i> Voltar
+    </a>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card stat-card--blue">
+        <div class="stat-card__icon"><i class="fas fa-calendar-alt"></i></div>
+        <div class="stat-card__info">
+            <span class="stat-card__value">{{ total_registros }}</span>
+            <span class="stat-card__label">Total de Registros</span>
+        </div>
+        <div class="stat-card__bg"><i class="fas fa-calendar-alt"></i></div>
+    </div>
+    <div class="stat-card stat-card--green">
+        <div class="stat-card__icon"><i class="fas fa-tint"></i></div>
+        <div class="stat-card__info">
+            <span class="stat-card__value">{{ total_anual }} <small>mm</small></span>
+            <span class="stat-card__label">Total Acumulado</span>
+        </div>
+        <div class="stat-card__bg"><i class="fas fa-tint"></i></div>
+    </div>
+    <div class="stat-card stat-card--orange">
+        <div class="stat-card__icon"><i class="fas fa-chart-line"></i></div>
+        <div class="stat-card__info">
+            <span class="stat-card__value">{{ media_mensal }} <small>mm</small></span>
+            <span class="stat-card__label">Média por Registro</span>
+        </div>
+        <div class="stat-card__bg"><i class="fas fa-chart-line"></i></div>
+    </div>
+    <div class="stat-card stat-card--red">
+        <div class="stat-card__icon"><i class="fas fa-arrow-up"></i></div>
+        <div class="stat-card__info">
+            <span class="stat-card__value">
+                {% if maior_valor %}{{ maior_valor.milimetros|floatformat:1 }}{% else %}0{% endif %}
+                <small>mm</small>
+            </span>
+            <span class="stat-card__label">Maior Registro</span>
+            {% if maior_valor %}
+                <span class="stat-card__date">{{ maior_valor.data|date:"d/m/Y" }}</span>
+            {% endif %}
+        </div>
+        <div class="stat-card__bg"><i class="fas fa-arrow-up"></i></div>
+    </div>
+    <div class="stat-card stat-card--purple">
+        <div class="stat-card__icon"><i class="fas fa-arrow-down"></i></div>
+        <div class="stat-card__info">
+            <span class="stat-card__value">
+                {% if menor_valor %}{{ menor_valor.milimetros|floatformat:1 }}{% else %}0{% endif %}
+                <small>mm</small>
+            </span>
+            <span class="stat-card__label">Menor Registro</span>
+            {% if menor_valor %}
+                <span class="stat-card__date">{{ menor_valor.data|date:"d/m/Y" }}</span>
+            {% endif %}
+        </div>
+        <div class="stat-card__bg"><i class="fas fa-arrow-down"></i></div>
+    </div>
+    <div class="stat-card stat-card--pink">
+        <div class="stat-card__icon"><i class="fas fa-percentage"></i></div>
+        <div class="stat-card__info">
+            <span class="stat-card__value">
+                {% if total_registros %}
+                    {{ total_anual|floatformat:0 }}
+                {% else %}
+                    0
+                {% endif %}
+                <small>mm/ano</small>
+            </span>
+            <span class="stat-card__label">Projeção Anual</span>
+        </div>
+        <div class="stat-card__bg"><i class="fas fa-percentage"></i></div>
+    </div>
+</div>
+
+<div class="dashboard-grid">
+    <section class="card full-width">
+        <div class="card-header">
+            <div class="card-icon"><i class="fas fa-chart-bar"></i></div>
+            <h2 class="card-title">Comparativo Mensal</h2>
+            <span class="card-badge">{{ meses_data|length }} meses</span>
+        </div>
+        <div class="card-body">
+            <div class="chart-container">
+                <canvas id="monthlyChart"></canvas>
+            </div>
+        </div>
+    </section>
+</div>
+
+<!-- ===== COMPARAÇÃO DE PERÍODOS ===== -->
+<section class="card full-width" style="margin-bottom:24px;">
+    <div class="card-header">
+        <div class="card-icon"><i class="fas fa-not-equal"></i></div>
+        <h2 class="card-title">Comparar Períodos</h2>
+        <span class="card-badge"><i class="far fa-calendar-alt"></i></span>
+    </div>
+    <div class="card-body">
+        <form method="get" action="{% url 'core:dashboard' %}" class="comparison-form" id="comparisonForm">
+            <div class="comp-presets">
+                <span class="comp-presets-label">Atalhos:</span>
+                <button type="button" class="btn btn-sm btn-preset" data-preset="today">Hoje</button>
+                <button type="button" class="btn btn-sm btn-preset" data-preset="thisweek">Esta Semana</button>
+                <button type="button" class="btn btn-sm btn-preset" data-preset="thisweek-lastweek">Semana atual × anterior</button>
+                <button type="button" class="btn btn-sm btn-preset" data-preset="thismonth">Este Mês</button>
+                <button type="button" class="btn btn-sm btn-preset" data-preset="thismonth-lastmonth">Mês atual × anterior</button>
+                <button type="button" class="btn btn-sm btn-preset" data-preset="last7">Últimos 7 dias</button>
+                <button type="button" class="btn btn-sm btn-preset" data-preset="last30">Últimos 30 dias</button>
+            </div>
+
+            <div class="comp-periods">
+                <div class="comp-period comp-period--a">
+                    <div class="comp-period__header">
+                        <span class="comp-period__badge">Período A</span>
+                    </div>
+                    <div class="comp-period__fields">
+                        <div class="form-group">
+                            <label><i class="fas fa-play"></i> Data Início</label>
+                            <input type="date" name="inicio_a" class="form-control" value="{{ inicio_a }}" id="id_inicio_a">
+                        </div>
+                        <div class="form-group">
+                            <label><i class="fas fa-stop"></i> Data Fim</label>
+                            <input type="date" name="fim_a" class="form-control" value="{{ fim_a }}" id="id_fim_a">
+                        </div>
+                    </div>
+                    <div class="comp-period__stats">
+                        <div class="comp-stat">
+                            <span class="comp-stat__value">{{ stats_a.total }} <small>mm</small></span>
+                            <span class="comp-stat__label">Total</span>
+                        </div>
+                        <div class="comp-stat">
+                            <span class="comp-stat__value">{{ stats_a.media }} <small>mm</small></span>
+                            <span class="comp-stat__label">Média</span>
+                        </div>
+                        <div class="comp-stat">
+                            <span class="comp-stat__value">{{ stats_a.qtd }}</span>
+                            <span class="comp-stat__label">Registros</span>
+                        </div>
+                        <div class="comp-stat">
+                            <span class="comp-stat__value">
+                                {% if stats_a.max %}{{ stats_a.max.milimetros|floatformat:1 }}{% else %}0{% endif %}
+                                <small>mm</small>
+                            </span>
+                            <span class="comp-stat__label">Máximo</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="comp-vs">
+                    <span class="comp-vs__text">vs</span>
+                    <div class="comp-vs__diff">
+                        {% if stats_a.total > stats_b.total %}
+                            <span class="comp-vs__arrow comp-vs__arrow--up"><i class="fas fa-arrow-up"></i></span>
+                        {% elif stats_a.total < stats_b.total %}
+                            <span class="comp-vs__arrow comp-vs__arrow--down"><i class="fas fa-arrow-down"></i></span>
+                        {% else %}
+                            <span class="comp-vs__arrow comp-vs__arrow--eq"><i class="fas fa-equals"></i></span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="comp-period comp-period--b">
+                    <div class="comp-period__header">
+                        <span class="comp-period__badge">Período B</span>
+                    </div>
+                    <div class="comp-period__fields">
+                        <div class="form-group">
+                            <label><i class="fas fa-play"></i> Data Início</label>
+                            <input type="date" name="inicio_b" class="form-control" value="{{ inicio_b }}" id="id_inicio_b">
+                        </div>
+                        <div class="form-group">
+                            <label><i class="fas fa-stop"></i> Data Fim</label>
+                            <input type="date" name="fim_b" class="form-control" value="{{ fim_b }}" id="id_fim_b">
+                        </div>
+                    </div>
+                    <div class="comp-period__stats">
+                        <div class="comp-stat">
+                            <span class="comp-stat__value">{{ stats_b.total }} <small>mm</small></span>
+                            <span class="comp-stat__label">Total</span>
+                        </div>
+                        <div class="comp-stat">
+                            <span class="comp-stat__value">{{ stats_b.media }} <small>mm</small></span>
+                            <span class="comp-stat__label">Média</span>
+                        </div>
+                        <div class="comp-stat">
+                            <span class="comp-stat__value">{{ stats_b.qtd }}</span>
+                            <span class="comp-stat__label">Registros</span>
+                        </div>
+                        <div class="comp-stat">
+                            <span class="comp-stat__value">
+                                {% if stats_b.max %}{{ stats_b.max.milimetros|floatformat:1 }}{% else %}0{% endif %}
+                                <small>mm</small>
+                            </span>
+                            <span class="comp-stat__label">Máximo</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="text-align:center;margin-top:18px;">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-sync-alt"></i> Comparar
+                </button>
+            </div>
+        </form>
+    </div>
+</section>
+
+{% if comp_labels %}
+<section class="card full-width" style="margin-bottom:24px;">
+    <div class="card-header">
+        <div class="card-icon"><i class="fas fa-chart-line"></i></div>
+        <h2 class="card-title">Comparação Diária</h2>
+    </div>
+    <div class="card-body">
+        <div class="chart-container" style="height:300px;">
+            <canvas id="comparisonChart"></canvas>
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<div class="dashboard-grid">
+    <section class="card full-width">
+        <div class="card-header">
+            <div class="card-icon"><i class="fas fa-table"></i></div>
+            <h2 class="card-title">Detalhamento por Mês</h2>
+        </div>
+        <div class="card-body">
+            {% if meses_data %}
+                <div class="table-wrapper">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th><i class="fas fa-calendar"></i> Mês</th>
+                                <th><i class="fas fa-tint"></i> Total (mm)</th>
+                                <th><i class="fas fa-chart-line"></i> Média (mm)</th>
+                                <th><i class="fas fa-list"></i> Registros</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for mes in meses_data %}
+                                <tr>
+                                    <td><span class="date-badge">{{ mes.mes|date:"F/Y" }}</span></td>
+                                    <td><span class="mm-value">{{ mes.total|floatformat:1 }}</span></td>
+                                    <td><span class="mm-value" style="color: var(--secondary)">{{ mes.media|floatformat:1 }}</span></td>
+                                    <td>{{ mes.quantidade }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="empty-state">
+                    <i class="fas fa-chart-bar empty-icon"></i>
+                    <p>Nenhum registro encontrado.</p>
+                    <p class="empty-hint">Adicione registros de chuva na página inicial para ver as estatísticas.</p>
+                </div>
+            {% endif %}
+        </div>
+    </section>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function() {
+
+    function formatDate(d) {
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
+    }
+
+    function getWeekRange(date) {
+        const d = new Date(date);
+        const day = d.getDay();
+        const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+        const monday = new Date(d.setDate(diff));
+        const sunday = new Date(monday);
+        sunday.setDate(monday.getDate() + 6);
+        return { start: monday, end: sunday };
+    }
+
+    const presets = {
+        today: function() {
+            const d = new Date();
+            return { a: { start: d, end: d }, b: { start: new Date(d.getTime() - 86400000), end: new Date(d.getTime() - 86400000) } };
+        },
+        thisweek: function() {
+            const now = new Date();
+            const wr = getWeekRange(now);
+            const prev = getWeekRange(new Date(wr.start.getTime() - 86400000));
+            return { a: { start: wr.start, end: wr.end }, b: { start: prev.start, end: prev.end } };
+        },
+        'thisweek-lastweek': function() {
+            const now = new Date();
+            const wr = getWeekRange(now);
+            const prev = getWeekRange(new Date(wr.start.getTime() - 86400000));
+            return { a: { start: wr.start, end: wr.end }, b: { start: prev.start, end: prev.end } };
+        },
+        thismonth: function() {
+            const now = new Date();
+            const start = new Date(now.getFullYear(), now.getMonth(), 1);
+            const end = now;
+            const prevStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+            const prevEnd = new Date(now.getFullYear(), now.getMonth(), 0);
+            return { a: { start, end }, b: { start: prevStart, end: prevEnd } };
+        },
+        'thismonth-lastmonth': function() {
+            const now = new Date();
+            const start = new Date(now.getFullYear(), now.getMonth(), 1);
+            const end = now;
+            const prevStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+            const prevEnd = new Date(now.getFullYear(), now.getMonth(), 0);
+            return { a: { start, end }, b: { start: prevStart, end: prevEnd } };
+        },
+        last7: function() {
+            const now = new Date();
+            const start = new Date(now.getTime() - 6 * 86400000);
+            const prevStart = new Date(start.getTime() - 7 * 86400000);
+            const prevEnd = new Date(start.getTime() - 86400000);
+            return { a: { start, end: now }, b: { start: prevStart, end: prevEnd } };
+        },
+        last30: function() {
+            const now = new Date();
+            const start = new Date(now.getTime() - 29 * 86400000);
+            const prevStart = new Date(start.getTime() - 30 * 86400000);
+            const prevEnd = new Date(start.getTime() - 86400000);
+            return { a: { start, end: now }, b: { start: prevStart, end: prevEnd } };
+        },
+    };
+
+    document.querySelectorAll('.btn-preset').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            const key = this.dataset.preset;
+            const fn = presets[key];
+            if (!fn) return;
+            const result = fn();
+            document.getElementById('id_inicio_a').value = formatDate(result.a.start);
+            document.getElementById('id_fim_a').value = formatDate(result.a.end);
+            document.getElementById('id_inicio_b').value = formatDate(result.b.start);
+            document.getElementById('id_fim_b').value = formatDate(result.b.end);
+            document.getElementById('comparisonForm').submit();
+        });
+    });
+
+    // Monthly chart
+    const labels = {{ meses_labels|safe }};
+    const totals = {{ meses_totals|safe }};
+    const medias = {{ meses_medias|safe }};
+    const quantidades = {{ meses_qtd|safe }};
+
+    if (labels.length > 0) {
+        const style = getComputedStyle(document.documentElement);
+        const primary = style.getPropertyValue('--primary').trim() || '#2563eb';
+        const secondary = style.getPropertyValue('--secondary').trim() || '#059669';
+
+        function hexToRgb(hex) {
+            const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return m ? `${parseInt(m[1],16)},${parseInt(m[2],16)},${parseInt(m[3],16)}` : '37,99,235';
+        }
+
+        new Chart(document.getElementById('monthlyChart'), {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Total (mm)',
+                        data: totals,
+                        backgroundColor: `rgba(${hexToRgb(primary)},0.75)`,
+                        borderColor: primary,
+                        borderWidth: 2,
+                        borderRadius: 6,
+                        barPercentage: 0.6,
+                    },
+                    {
+                        label: 'Média (mm)',
+                        data: medias,
+                        backgroundColor: `rgba(${hexToRgb(secondary)},0.7)`,
+                        borderColor: secondary,
+                        borderWidth: 2,
+                        borderRadius: 6,
+                        barPercentage: 0.6,
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { labels: { font: { family: "'Inter',sans-serif", weight: '600' }, boxWidth: 14, padding: 16 } },
+                    tooltip: {
+                        backgroundColor: 'rgba(0,0,0,0.8)',
+                        titleFont: { weight: '700' },
+                        bodyFont: { family: "'Inter',sans-serif" },
+                        padding: 12,
+                        cornerRadius: 8,
+                        callbacks: {
+                            afterLabel: function(ctx) {
+                                const idx = ctx.dataIndex;
+                                if (ctx.dataset.label === 'Total (mm)' && quantidades[idx]) return ' Registros: ' + quantidades[idx];
+                                return '';
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { font: { family: "'Inter',sans-serif" }, callback: function(v) { return v+' mm'; } } },
+                    x: { grid: { display: false }, ticks: { font: { family: "'Inter',sans-serif", size: 11 } } }
+                }
+            }
+        });
+    }
+
+    // Comparison chart
+    const compLabels = {{ comp_labels_json|safe }};
+    const compA = {{ comp_values_a|safe }};
+    const compB = {{ comp_values_b|safe }};
+
+    if (compLabels.length > 0) {
+        const style = getComputedStyle(document.documentElement);
+        const primary = style.getPropertyValue('--primary').trim() || '#2563eb';
+        const secondary = style.getPropertyValue('--secondary').trim() || '#059669';
+
+        function hexToRgb(hex) {
+            const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return m ? `${parseInt(m[1],16)},${parseInt(m[2],16)},${parseInt(m[3],16)}` : '37,99,235';
+        }
+
+        const fmtLabels = compLabels.map(function(d) {
+            const p = d.split('-');
+            return p[2] + '/' + p[1];
+        });
+
+        new Chart(document.getElementById('comparisonChart'), {
+            type: 'bar',
+            data: {
+                labels: fmtLabels,
+                datasets: [
+                    {
+                        label: 'Período A (mm)',
+                        data: compA,
+                        backgroundColor: `rgba(${hexToRgb(primary)},0.8)`,
+                        borderColor: primary,
+                        borderWidth: 2,
+                        borderRadius: 4,
+                    },
+                    {
+                        label: 'Período B (mm)',
+                        data: compB,
+                        backgroundColor: `rgba(${hexToRgb(secondary)},0.8)`,
+                        borderColor: secondary,
+                        borderWidth: 2,
+                        borderRadius: 4,
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { labels: { font: { family: "'Inter',sans-serif", weight: '600' }, boxWidth: 14, padding: 16 } },
+                    tooltip: {
+                        backgroundColor: 'rgba(0,0,0,0.8)',
+                        titleFont: { weight: '700' },
+                        bodyFont: { family: "'Inter',sans-serif" },
+                        padding: 12,
+                        cornerRadius: 8,
+                    }
+                },
+                scales: {
+                    y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { font: { family: "'Inter',sans-serif" }, callback: function(v) { return v+' mm'; } } },
+                    x: { grid: { display: false }, ticks: { font: { family: "'Inter',sans-serif", size: 10 } } }
+                }
+            }
+        });
+    }
+})();
+</script>
+{% endblock %}
